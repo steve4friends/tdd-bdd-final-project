@@ -27,7 +27,7 @@ import os
 import logging
 import unittest
 from decimal import Decimal
-from service.models import Product, Category, db
+from service.models import Product, Category, db, DataValidationError
 from service import app
 from tests.factories import ProductFactory
 
@@ -189,3 +189,60 @@ class TestProductModel(unittest.TestCase):
         self.assertEqual(found.count(), count)
         for product in found:
             self.assertEqual(product.category, category)
+
+    def test_update_without_id(self):
+        """Testa la chiamata a update() senza un ID."""
+        product = ProductFactory()
+        product.id = None
+        with self.assertRaisesRegex(DataValidationError, "Update called with empty ID field"):
+            product.update()
+        self.assertIsNone(product.id)
+
+    def test_deserialize_invalid_available_type(self):
+        """Testa la deserializzazione con un tipo non booleano per 'available'."""
+        data = {
+            "name": "Boolean Issue",
+            "description": "Testing availability type.",
+            "price": 100.00,
+            "available": "yes",
+            "category": "BOOKS"
+        }
+        product = Product()
+        with self.assertRaisesRegex(DataValidationError, "Invalid type for boolean"):
+            product.deserialize(data)
+
+    def test_deserialize_type_error_missing_data(self):
+        """Testa il TypeError sollevato se il dizionario di input è None o di tipo inaspettato."""
+        data = None
+        product = Product()
+        with self.assertRaisesRegex(
+            DataValidationError,
+            "Invalid product: body of request contained bad or no data "
+            "'NoneType' object is not subscriptable"
+        ):
+            product.deserialize(data)
+
+    def test_deserialize_attribute_error(self):
+        """Testa l'AttributeError sollevato da getattr se la categoria non è un membro valido dell'enum."""
+        data = {
+            "name": "Wrong Category",
+            "description": "Invalid category value.",
+            "price": 50.00,
+            "available": False,
+            "category": "INVALID_CATEGORY"
+        }
+        product = Product()
+        with self.assertRaisesRegex(DataValidationError, "Invalid attribute: INVALID_CATEGORY"):
+            product.deserialize(data)
+
+    def test_find_by_price_existing_price_as_string(self):
+        """It should Find Products by Price"""
+        products = ProductFactory.create_batch(10)
+        for product in products:
+            product.create()
+        price = products[0].price
+        count = len([product for product in products if product.price == price])
+        found = Product.find_by_price(price)
+        self.assertEqual(found.count(), count)
+        for product in found:
+            self.assertEqual(product.price, price)
