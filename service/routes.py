@@ -144,6 +144,7 @@ def update_products(product_id):
     product.update()
     return product.serialize(), status.HTTP_200_OK
 
+
 ######################################################################
 # DELETE A PRODUCT
 ######################################################################
@@ -163,13 +164,16 @@ def delete_products(product_id):
     return "", status.HTTP_204_NO_CONTENT
 
 
+######################################################################
+# PRODUCT COUNT
+######################################################################
 @app.route("/products/count", methods=["GET"])
 def get_product_count():
     """
     Returns the total number of Products
     """
     app.logger.info("Request to get the count of all Products...")
-    count = Product.all().count()  # Assuming Product.all() returns a query
+    count = Product.query.count()  # Utilizzo di SQLAlchemy per contare i prodotti
     message = {"count": count}
     app.logger.info("Product count: %s", count)
     return jsonify(message), status.HTTP_200_OK

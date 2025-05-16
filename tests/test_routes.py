@@ -163,22 +163,15 @@ class TestProductRoutes(TestCase):
         response = self.client.post(BASE_URL, data={}, content_type="plain/text")
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
 
-    #
-    # ADD YOUR TEST CASES HERE
-    #
-
     ######################################################################
     # Utility functions
     ######################################################################
-
     def get_product_count(self):
-        """save the current number of products"""
-        response = self.client.get(BASE_URL)
+        """Get the current number of products using the /products/count endpoint"""
+        response = self.client.get(f"{BASE_URL}/count")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.get_json()
-        # logging.debug("data = %s", data)
-        return len(data)
-        
+        return data["count"]
 
     def test_get_product(self):
         """It should Get a single Product"""
